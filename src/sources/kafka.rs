@@ -36,8 +36,8 @@ use crate::{
     },
     event::{BatchNotifier, BatchStatus, Event, Value},
     internal_events::{
-        KafkaBytesReceived, KafkaEventsReceived, KafkaOffsetUpdateError, KafkaReadError,
-        StreamClosedError,
+        KafkaBytesReceived, KafkaEventsReceived, KafkaOffsetUpdateError, KafkaPauseResumeError,
+        KafkaReadError, StreamClosedError,
     },
     kafka,
     serde::{bool_or_struct, default_decoding, default_framing_message_based},
@@ -262,15 +262,14 @@ async fn kafka_source(
             _ = &mut shutdown => {
                 if let Ok(topics) = consumer.subscription() {
                     if let Err(error) = consumer.pause(&topics) {
-                        // Might not be the best error type for this :/
-                        emit!(KafkaReadError { error });
+                        emit!(KafkaPauseResumeError { error });
                     }
                 }
                 shutting_down = true;
 
                 // If we have an ack stream, drop the sender end and allow acks to drain
-                match finalizer {
-                    Some(_) => drop(finalizer.take()),
+                match finalizer.take() {
+                    Some(finalizer) => drop(finalizer),
                     _ => break
                 }
             },
