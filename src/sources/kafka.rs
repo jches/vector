@@ -242,6 +242,7 @@ async fn kafka_source(
     acknowledgements: bool,
 ) -> Result<(), ()> {
     let consumer = Arc::new(consumer);
+
     let (finalizer, mut ack_stream) =
         OrderedFinalizer::<FinalizerEntry>::maybe_new(acknowledgements, None);
     let finalizer = finalizer.map(Arc::new);
